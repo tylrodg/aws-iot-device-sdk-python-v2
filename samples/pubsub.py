@@ -8,6 +8,10 @@ import sys
 import threading
 import time
 from uuid import uuid4
+import json
+import math
+import time
+import random
 
 # This sample uses the Message Broker for AWS IoT to send and receive messages
 # through an MQTT connection. On startup, the device connects to the server,
@@ -30,15 +34,17 @@ parser.add_argument('--message', default="Hello World!", help="Message to publis
 parser.add_argument('--count', default=10, type=int, help="Number of messages to publish/receive before exiting. " +
                                                           "Specify 0 to run forever.")
 parser.add_argument('--use-websocket', default=False, action='store_true',
-    help="To use a websocket instead of raw mqtt. If you " +
-    "specify this option you must specify a region for signing, you can also enable proxy mode.")
+                    help="To use a websocket instead of raw mqtt. If you " +
+                    "specify this option you must specify a region for signing, you can also enable proxy mode.")
 parser.add_argument('--signing-region', default='us-east-1', help="If you specify --use-web-socket, this " +
-    "is the region that will be used for computing the Sigv4 signature")
+                    "is the region that will be used for computing the Sigv4 signature")
 parser.add_argument('--proxy-host', help="Hostname for proxy to connect to. Note: if you use this feature, " +
-    "you will likely need to set --root-ca to the ca for your proxy.")
+                    "you will likely need to set --root-ca to the ca for your proxy.")
 parser.add_argument('--proxy-port', type=int, default=8080, help="Port for proxy to connect to.")
 parser.add_argument('--verbosity', choices=[x.name for x in io.LogLevel], default=io.LogLevel.NoLogs.name,
-    help='Logging level')
+                    help='Logging level')
+parser.add_argument('--device_name', default='')
+parser.add_argument('--interval', type=int, default=1)
 
 # Using globals to simplify sample code
 args = parser.parse_args()
@@ -49,6 +55,8 @@ received_count = 0
 received_all_event = threading.Event()
 
 # Callback when connection is accidentally lost.
+
+
 def on_connection_interrupted(connection, error, **kwargs):
     print("Connection interrupted. error: {}".format(error))
 
@@ -67,12 +75,12 @@ def on_connection_resumed(connection, return_code, session_present, **kwargs):
 
 
 def on_resubscribe_complete(resubscribe_future):
-        resubscribe_results = resubscribe_future.result()
-        print("Resubscribe results: {}".format(resubscribe_results))
+    resubscribe_results = resubscribe_future.result()
+    print("Resubscribe results: {}".format(resubscribe_results))
 
-        for topic, qos in resubscribe_results['topics']:
-            if qos is None:
-                sys.exit("Server rejected resubscribe to topic: {}".format(topic))
+    for topic, qos in resubscribe_results['topics']:
+        if qos is None:
+            sys.exit("Server rejected resubscribe to topic: {}".format(topic))
 
 
 # Callback when the subscribed topic receives a message
@@ -83,13 +91,14 @@ def on_message_received(topic, payload, dup, qos, retain, **kwargs):
     if received_count == args.count:
         received_all_event.set()
 
+
 if __name__ == '__main__':
     # Spin up resources
     event_loop_group = io.EventLoopGroup(1)
     host_resolver = io.DefaultHostResolver(event_loop_group)
     client_bootstrap = io.ClientBootstrap(event_loop_group, host_resolver)
 
-    if args.use_websocket == True:
+    if args.use_websocket:
         proxy_options = None
         if (args.proxy_host):
             proxy_options = http.HttpProxyOptions(host_name=args.proxy_host, port=args.proxy_port)
@@ -145,19 +154,36 @@ if __name__ == '__main__':
     # This step loops forever if count was set to 0.
     if args.message:
         if args.count == 0:
-            print ("Sending messages until program killed")
+            print("Sending messages until program killed")
         else:
-            print ("Sending {} message(s)".format(args.count))
+            print("Sending {} message(s)".format(args.count))
+        rand_count = 0
+        temperature = 0
 
         publish_count = 1
         while (publish_count <= args.count) or (args.count == 0):
-            message = "{} [{}]".format(args.message, publish_count)
-            print("Publishing message to topic '{}': {}".format(args.topic, message))
+            # message = "{} [{}]".format(args.message, publish_count)
+            # print("Publishing message to topic '{}': {}".format(args.topic, message))
+            if rand_count == 4:
+                temperature = 30.5
+                rand_count = 0
+            else:
+                temperature = float(random.randint(10, 26))
+                rand_count += 1
+
+            jsonMessage = {
+                "device_name": args.devicename,
+                "data": {
+                    "temperature": temperature,
+                    "hum": 0.45},
+                "timestamp": time.time()}
+            jsonData = json.dumps(jsonMessage)
+            print("Publishing message to topic '{}': {}".format(args.topic, jsonData))
             mqtt_connection.publish(
                 topic=args.topic,
-                payload=message,
+                payload=jsonData,
                 qos=mqtt.QoS.AT_LEAST_ONCE)
-            time.sleep(1)
+            time.sleep(args.interval)
             publish_count += 1
 
     # Wait for all messages to be received.
