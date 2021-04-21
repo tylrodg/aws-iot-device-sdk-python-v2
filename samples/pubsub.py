@@ -173,8 +173,8 @@ if __name__ == '__main__':
 
             jsonMessage = {
                 "device_name": args.device_name,
-                "data": {
-                    "temperature": temperature,
+                "measurements": {
+                    "temp": temperature,
                     "hum": 0.45},
                 "timestamp": time.time()}
             jsonData = json.dumps(jsonMessage)
