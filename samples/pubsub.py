@@ -157,25 +157,32 @@ if __name__ == '__main__':
             print("Sending messages until program killed")
         else:
             print("Sending {} message(s)".format(args.count))
-        rand_count = 0
-        temperature = 0
 
         publish_count = 1
         while (publish_count <= args.count) or (args.count == 0):
             # message = "{} [{}]".format(args.message, publish_count)
             # print("Publishing message to topic '{}': {}".format(args.topic, message))
-            if rand_count == 4:
-                temperature = 30.5
-                rand_count = 0
-            else:
-                temperature = float(random.randint(10, 26))
-                rand_count += 1
+
+            # temperature
+            temp_arr = [30.5] * 25
+            temp_arr = ['rand'] * 75
+            temperature = random.choice(temp_arr)
+            if temperature == 'rand':
+                temperature = random.uniform(10, 26.5)
+
+            # humidity
+            hum_arr = [-1] * 20
+            hum_arr.append([.05] * 15)
+            hum_arr.append(['rand'] * 65)
+            humidity = random.choice(hum_arr)
+            if humidity == 'rand':
+                humidity = random.uniform(.4, .8)
 
             jsonMessage = {
                 "device_name": args.device_name,
                 "measurements": {
                     "temp": temperature,
-                    "hum": 0.45},
+                    "hum": humidity},
                 "timestamp": time.time()}
             jsonData = json.dumps(jsonMessage)
             print("Publishing message to topic '{}': {}".format(args.topic, jsonData))
