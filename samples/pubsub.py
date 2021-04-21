@@ -172,7 +172,7 @@ if __name__ == '__main__':
                 rand_count += 1
 
             jsonMessage = {
-                "device_name": args.devicename,
+                "device_name": args.device_name,
                 "data": {
                     "temperature": temperature,
                     "hum": 0.45},
