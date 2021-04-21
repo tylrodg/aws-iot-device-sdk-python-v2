@@ -165,15 +165,15 @@ if __name__ == '__main__':
 
             # temperature
             temp_arr = [30.5] * 25
-            temp_arr = ['rand'] * 75
+            temp_arr.extend(['rand'] * 75)
             temperature = random.choice(temp_arr)
             if temperature == 'rand':
                 temperature = random.uniform(10, 26.5)
 
             # humidity
             hum_arr = [-1] * 20
-            hum_arr.append([.05] * 15)
-            hum_arr.append(['rand'] * 65)
+            hum_arr.extend([.05] * 15)
+            hum_arr.extend(['rand'] * 65)
             humidity = random.choice(hum_arr)
             if humidity == 'rand':
                 humidity = random.uniform(.4, .8)
